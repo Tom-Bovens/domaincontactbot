@@ -1,0 +1,27 @@
+{
+  "name": "chiptourguidebot",
+  "version": "1.0.0",
+  "description": "A small bot which educates new users on how to use ChatShipper.",
+  "main": "src/index.js",
+  "dependencies": {
+    "chipchat": "^0.1.8",
+    "debug": "^4.1.1",
+    "dotenv": "^8.2.0",
+    "lodash": "^4.17.19"
+  },
+  "devDependencies": {
+    "eslint-plugin-node": "^11.1.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint",
+    "dev": "DEBUG=*,-express:router nodemon --watch ./src ./src/index.js"
+  },
+  "keywords": [
+    "bot",
+    "chatshipper",
+    "tourguide"
+  ],
+  "author": "Tom Bovens <tombovens2003@gmail.com>",
+  "license": "ISC"
+}
