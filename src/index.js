@@ -2,12 +2,12 @@
 
 // To-do
 // Make a good save/load system that allows an agent to come back to a conversation that has since been closed.
-// Editing the videoContentDescription on Video 6 once it is unprivatised.
+    // Editing the videoContentDescription on Video 6 once it is unprivatised.
 
-const path = require('path');
+    const path = require('path');
 const envfile = `${process.cwd()}${path.sep}.env`;
 require('dotenv').config({
-       path: envfile
+    path: envfile
 });
 const ChipChat = require('chipchat');
 const log = require('debug')('tourguide')
@@ -26,7 +26,7 @@ const incrementor = {
 };
 log(process.env.HOST,process.env.TOKEN)
 const errorCatch = (error) => {
-   log(error);
+    log(error);
 }
 
 
@@ -50,7 +50,7 @@ if (!process.env.TOKEN) {
 // Logs any error produced to the console
 bot.on('error', log);
 
-bot.on('user.login', async (loginUser) => {
+bot.on('user.create', async (loginUser) => {
     try {
         const user = await bot.users.get(get(loginUser, 'data.user.id'))
         const userId = user.id
@@ -61,13 +61,20 @@ bot.on('user.login', async (loginUser) => {
             if (user.role == 'guest') {
                 if (userId) {
                     let conversation
-                    const conversationId = get(loginUser, 'data.conversation.id');
                     const oldConvFinder = await bot.conversations.list({ name:'Result comments', participants:{ user: userId } })
                     if (oldConvFinder.length > 0) {
                         conversation = oldConvFinder[0]
+                        await bot.send(conversation.id, [
+                            {
+                                text: `Hey there ${user.givenName}! Welcome to Chatshipper! I need to show you something. Just a second!`,
+                                isBackchannel: false,
+                                role: 'bot',
+                                delay: incrementor.set(3)
+                            }
+                        ])
                     } else {
                         conversation = await bot.conversations.create(
-                            { name: 'Result comments', messages: [{ text: `Hey there ${user.givenName}! I need to show you something. just a second!` }] }
+                            { name: 'Result comments', messages: [{ text: `Hey there ${user.givenName}! I need to show you something!` }] }
                         )
                     }
                     await bot.send(conversation.id, {
@@ -81,10 +88,21 @@ bot.on('user.login', async (loginUser) => {
                     })
                     await bot.send(conversation.id, [
                         {
-                            text: `Chatshipper has a nice feature called result commenting!`,
+                            text: `Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made!`,
                             isBackchannel: false,
                             role: 'bot',
-                            delay: incrementor.set(3)
+                            delay: incrementor.increment(3)
+                        },
+                        {
+                            text: `Just a second, i think i have an example of it somewhere...`,
+                            isBackchannel: false,
+                            role: 'bot',
+                            delay: incrementor.increment(3)
+                        },
+                        {
+                            contentType: 'image/png',
+                            text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
+                            delay: incrementor.increment(4)
                         }
                     ])
                 }
