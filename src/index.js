@@ -1,10 +1,6 @@
 
 
-// To-do
-// Make a good save/load system that allows an agent to come back to a conversation that has since been closed.
-    // Editing the videoContentDescription on Video 6 once it is unprivatised.
-
-    const path = require('path');
+const path = require('path');
 const envfile = `${process.cwd()}${path.sep}.env`;
 require('dotenv').config({
     path: envfile
@@ -119,29 +115,31 @@ bot.on('user.create', async (loginUser) => {
 });
 
 bot.on('message.create.bot.postback.agent', async (message, conversation) => {
-    try {
-        await bot.send(conversation.id, [
-            {
-                text: `Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made!`,
-                isBackchannel: false,
-                role: 'bot',
-                delay: incrementor.increment(3)
-            },
-            {
-                text: `Just a second, i think i have an example of it somewhere...`,
-                isBackchannel: false,
-                role: 'bot',
-                delay: incrementor.increment(3)
-            },
-            {
-                contentType: 'image/png',
-                text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
-                delay: incrementor.increment(4)
-            }
-        ])
-} catch (e){
-    errorCatch(e)
-}
+    if (message.text === "userReturned") {
+        try {
+            await bot.send(conversation.id, [
+                {
+                    text: `Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made!`,
+                    isBackchannel: false,
+                    role: 'bot',
+                    delay: incrementor.increment(3)
+                },
+                {
+                    text: `Just a second, i think i have an example of it somewhere...`,
+                    isBackchannel: false,
+                    role: 'bot',
+                    delay: incrementor.increment(3)
+                },
+                {
+                    contentType: 'image/png',
+                    text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
+                    delay: incrementor.increment(4)
+                }
+            ])
+        } catch (e){
+            errorCatch(e)
+        }
+    }
 });
 
 
