@@ -66,10 +66,17 @@ bot.on('user.create', async (loginUser) => {
                         conversation = oldConvFinder[0]
                         await bot.send(conversation.id, [
                             {
-                                text: `Hey there ${user.givenName}! Welcome to Chatshipper! I need to show you something. Just a second!`,
+                                text: `Hey there ${user.givenName}! Welcome to Chatshipper! I need to show you something. Tell me when you're ready!`,
                                 isBackchannel: false,
                                 role: 'bot',
-                                delay: incrementor.set(3)
+                                delay: incrementor.set(3),
+                                actions: [
+                                    {
+                                        type: "reply",
+                                        text: "Ok!",
+                                        payload: "userReturned"
+                                    }
+                                ]
                             }
                         ])
                     } else {
@@ -88,21 +95,17 @@ bot.on('user.create', async (loginUser) => {
                     })
                     await bot.send(conversation.id, [
                         {
-                            text: `Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made!`,
+                            text: `Tell me when you're ready!`,
                             isBackchannel: false,
                             role: 'bot',
-                            delay: incrementor.increment(3)
-                        },
-                        {
-                            text: `Just a second, i think i have an example of it somewhere...`,
-                            isBackchannel: false,
-                            role: 'bot',
-                            delay: incrementor.increment(3)
-                        },
-                        {
-                            contentType: 'image/png',
-                            text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
-                            delay: incrementor.increment(4)
+                            delay: incrementor.set(3),
+                            actions: [
+                                {
+                                    type: "reply",
+                                    text: "Ok!",
+                                    payload: "userReturned"
+                                }
+                            ]
                         }
                     ])
                 }
@@ -114,6 +117,33 @@ bot.on('user.create', async (loginUser) => {
         errorCatch(e)
     }
 });
+
+bot.on('message.create.bot.postback.agent', async (message, conversation) => {
+    try {
+        await bot.send(conversation.id, [
+            {
+                text: `Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made!`,
+                isBackchannel: false,
+                role: 'bot',
+                delay: incrementor.increment(3)
+            },
+            {
+                text: `Just a second, i think i have an example of it somewhere...`,
+                isBackchannel: false,
+                role: 'bot',
+                delay: incrementor.increment(3)
+            },
+            {
+                contentType: 'image/png',
+                text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
+                delay: incrementor.increment(4)
+            }
+        ])
+} catch (e){
+    errorCatch(e)
+}
+});
+
 
 // Start Express.js webhook server to start listening
 bot.start();
