@@ -77,9 +77,9 @@ bot.on('user.login', async (loginUser) => {
     try {
         const user = await bot.users.get(get(loginUser, 'data.user.id'))
         const userId = user.id
-        const hasSeenGuide = get(user, 'meta.subscribedToQuotes', 'false')
-        log(`User guide status: ${hasSeenGuide}`)
-        if (hasSeenGuide === "false") {
+        const hasSubscribed = get(user, 'meta.subscribedToQuotes', 'false')
+        log(`User status: ${hasSubscribed}`)
+        if (hasSubscribed === "false") {
             log("User has not seen the guide on result comments yet.")
             if (user.role == 'agent') {
                 if (userId) {
@@ -154,7 +154,7 @@ bot.on('user.login', async (loginUser) => {
             } else {
                 log(`User is not an agent. Role is : ${user.role}`)
             }
-        } else if (hasSeenGuide === "true") {
+        } else if (hasSubscribed === "true") {
             depositQuote()
 
         }
@@ -165,6 +165,7 @@ bot.on('user.login', async (loginUser) => {
 
 bot.on('message.create.bot.postback.agent', async (message, conversation) => {
     try {
+        const userId = message.user
         if (message.text == "userAccepted") {
             await bot.send(conversation.id, [
                 {
@@ -174,6 +175,7 @@ bot.on('message.create.bot.postback.agent', async (message, conversation) => {
                     delay: incrementor.increment(3)
                 }
             ])
+            await bot.users.update(userId, { meta: { subscribedToQuotes: 'true' }})
         } else if (message.text == "userDenied") {
             await bot.send(conversation.id, [
                 {
@@ -183,9 +185,111 @@ bot.on('message.create.bot.postback.agent', async (message, conversation) => {
                     delay: incrementor.increment(3)
                 }
             ])
+            await bot.users.update(userId, { meta: { subscribedToQuotes: 'disabled' }})
+        } else if (message.text == "KeepQuotes") {
+            await bot.send(conversation.id, [
+                {
+                    text: `Alright then, see you tomorrow.`,
+                    isBackchannel: false,
+                    role: 'bot',
+                    delay: incrementor.increment(3)
+                }
+            ])
+            await bot.users.update(userId, { meta: { subscribedToQuotes: 'true' }})
+        } else if (message.text == "StopQuotes") {
+            await bot.send(conversation.id, [
+                {
+                    text: `Alright then. I won't bother you anymore.`,
+                    isBackchannel: false,
+                    role: 'bot',
+                    delay: incrementor.increment(3)
+                }
+            ])
+            await bot.users.update(userId, { meta: { subscribedToQuotes: 'disabled' }})
+        } else if (message.text == "StartQuotes") {
+            await bot.send(conversation.id, [
+                {
+                    text: `Alright then, I'll see you tomorrow.`,
+                    isBackchannel: false,
+                    role: 'bot',
+                    delay: incrementor.increment(3)
+                }
+            ])
+            await bot.users.update(userId, { meta: { subscribedToQuotes: 'true' }})
+        } else if (message.text == "KeepQuotesOff") {
+            await bot.send(conversation.id, [
+                {
+                    text: `Alright then, call me when you want to get daily quotes.`,
+                    isBackchannel: false,
+                    role: 'bot',
+                    delay: incrementor.increment(3)
+                }
+            ])
+            await bot.users.update(userId, { meta: { subscribedToQuotes: 'disabled' }})
         }
     } catch (e) { errorCatch(e) }
 });
+
+bot.on('message.create.agent.command', (message, conversation) => {
+    if (message.type === 'command' && message.text === ">zen") {
+        const userId = message.user
+        bot.users.get(userId).then((user) => {i
+            const userPreference = get(user, 'meta.subscribedToQuotes', 'false')
+            if (userPreference === 'true') {
+                conversation.say([
+                    {
+                        text: "Hey there. You are currently receiving daily quotes.",
+                        role: 'bot',
+                        delay: incrementor.set(2)
+                    },
+                    {
+                        text: "Do you want to change this?",
+                        role: 'bot',
+                        delay: incrementor.increment(3),
+                        actions: [
+                            {
+                                type: "reply",
+                                text: `Keep receiving quotes.`,
+                                payload: `KeepQuotes`
+                            },
+                            {
+                                type: "reply",
+                                text: "Stop receiving quotes.",
+                                payload: `StopQuotes`
+                            }
+                        ]
+                    }
+                ]).catch(errorCatch)
+            } else if (userPreference === 'disabled') {
+                conversation.say([
+                    {
+                        text: "Hey there. You are currently not receiving daily quotes.",
+                        role: 'bot',
+                        delay: incrementor.set(2)
+                    },
+                    {
+                        text: "Do you want to receive quotes?",
+                        role: 'bot',
+                        delay: incrementor.increment(3),
+                        actions: [
+                            {
+                                type: "reply",
+                                text: `Start receiving quotes.`,
+                                payload: `StartQuotes`
+                            },
+                            {
+                                type: "reply",
+                                text: "Keep not receiving quotes.",
+                                payload: `KeepQuotesOff`
+                            }
+                        ]
+                    }
+                ]).catch(errorCatch)
+            }
+        }).catch(errorCatch);
+    }
+})
+
 
 // Start Express.js webhook server to start listening
 bot.start();
