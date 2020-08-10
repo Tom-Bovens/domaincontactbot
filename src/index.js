@@ -25,6 +25,13 @@ const errorCatch = (error) => {
     log(error);
 }
 
+function Arraysearch(myArray){
+    for (var i=0; i < myArray.length; i++) {
+        if (myArray[i].role === 'agent' || myArray[i].role === 'owner') {
+            return myArray[i];
+        }
+    }
+}
 
 // Create a new bot instance
 const bot = new ChipChat({
@@ -46,97 +53,26 @@ if (!process.env.TOKEN) {
 // Logs any error produced to the console
 bot.on('error', log);
 
-bot.on('user.create', async (loginUser) => {
-    try {
-        const user = await bot.users.get(get(loginUser, 'data.user.id'))
-        const userId = user.id
-        const hasSeenGuide = get(user, 'meta.hasSeenCommentguide', 'false')
-        log(`User guide status: ${hasSeenGuide}`)
-        if (hasSeenGuide === "false") {
-            log("User has not seen the guide on result comments yet.")
-            if (user.role == 'guest') {
-                if (userId) {
-                    let conversation
-                    const oldConvFinder = await bot.conversations.list({ name:'Result comments', participants:{ user: userId } })
-                    if (oldConvFinder.length > 0) {
-                        conversation = oldConvFinder[0]
-                        await bot.send(conversation.id, [
-                            {
-                                text: `Hey there ${user.givenName}! Welcome to Chatshipper! I need to show you something. Tell me when you're ready!`,
-                                isBackchannel: false,
-                                role: 'bot',
-                                delay: incrementor.set(3),
-                                actions: [
-                                    {
-                                        type: "reply",
-                                        text: "Ok!",
-                                        payload: "userReturned"
-                                    }
-                                ]
-                            }
-                        ])
-                    } else {
-                        conversation = await bot.conversations.create(
-                            { name: 'Result comments', messages: [{ text: `Hey there ${user.givenName}! I need to show you something!` }] }
-                        )
-                    }
-                    await bot.send(conversation.id, {
-                        type: 'command',
-                        text: '/assign',
-                        meta: {
-                            "users": [
-                                userId
-                            ]
-                        }
-                    })
-                    await bot.send(conversation.id, [
-                        {
-                            text: `Tell me when you're ready!`,
-                            isBackchannel: false,
-                            role: 'bot',
-                            delay: incrementor.set(3),
-                            actions: [
-                                {
-                                    type: "reply",
-                                    text: "Ok!",
-                                    payload: "userReturned"
-                                }
-                            ]
-                        }
-                    ])
-                }
-            } else {
-                log(`User is not a guest. Role is : ${user.role}`)
-            }
-        }
-    } catch (e){
-        errorCatch(e)
-    }
-});
-
-bot.on('message.create.bot.postback.agent', async (message, conversation) => {
-    if (message.text === "userReturned") {
+bot.on('message.create.bot.command', async (info) => {
+    if (info.text === "/join") {
         try {
-            await bot.send(conversation.id, [
-                {
-                    text: `Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made!`,
-                    isBackchannel: false,
-                    role: 'bot',
-                    delay: incrementor.increment(3)
-                },
-                {
-                    text: `Just a second, i think i have an example of it somewhere...`,
-                    isBackchannel: false,
-                    role: 'bot',
-                    delay: incrementor.increment(3)
-                },
-                {
-                    contentType: 'image/png',
-                    text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
-                    delay: incrementor.increment(4)
-                }
-            ])
-        } catch (e){
+            const conversationId = info.conversation
+            log(conversationId)
+            const conversation = await bot.conversations.get(conversationId)
+            const agentUser = Arraysearch(conversation.participants)
+            log(agentUser)
+            await bot.send(conversationId, {
+                type: 'card',
+                text: 'Colleagues of this contact.',
+                isBackchannel: true
+            })
+            await bot.send(conversationId, {
+                type: 'card',
+                contentType: 'text/html',
+                text: 'https://development.chatshipper.com/conversations/5f2bf77b2a70c3001dea0331',
+                isBackchannel: true
+            })
+        } catch (e) {
             errorCatch(e)
         }
     }
