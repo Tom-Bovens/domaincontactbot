@@ -25,14 +25,6 @@ const errorCatch = (error) => {
     log(error);
 }
 
-function Arraysearch(myArray){
-    for (var i=0; i < myArray.length; i++) {
-        if (myArray[i].role === 'agent' || myArray[i].role === 'owner') {
-            return myArray[i];
-        }
-    }
-}
-
 // Create a new bot instance
 const bot = new ChipChat({
     host: process.env.HOST,
@@ -43,7 +35,6 @@ const bot = new ChipChat({
 if (!process.env.TOKEN) {
     throw 'No token found, please define a token with export TOKEN=(Webhook token), or use an .env file.'
 }
-
 
 // Use any REST resource
 // bot.users.get(bot.auth.user).then((botUser) => {
@@ -59,19 +50,21 @@ bot.on('message.create.bot.command', async (info) => {
             const conversationId = info.conversation
             log(conversationId)
             const conversation = await bot.conversations.get(conversationId)
-            const agentUser = Arraysearch(conversation.participants)
-            log(agentUser)
-            await bot.send(conversationId, {
-                type: 'card',
-                text: 'Colleagues of this contact.',
-                isBackchannel: true
-            })
-            await bot.send(conversationId, {
-                type: 'card',
-                contentType: 'text/html',
-                text: 'https://development.chatshipper.com/conversations/5f2bf77b2a70c3001dea0331',
-                isBackchannel: true
-            })
+            const user = conversation.participants.find((participants) => participants.role === 'agent');
+            const getUser = await bot.users.get(user.user)
+            log(getUser.email)
+            if (user.role === 'agent') {
+                await bot.send(conversationId, [{
+                    type: 'card',
+                    text: 'Colleagues of this contact.',
+                    isBackchannel: true
+                },
+                {
+                    type: 'card',
+                    text: 'https://developers.chatshipper.com/docs/pg-introduction',
+                    isBackchannel: true
+                }])
+            }
         } catch (e) {
             errorCatch(e)
         }
