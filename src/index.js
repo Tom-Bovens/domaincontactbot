@@ -1,4 +1,8 @@
-
+// Make bot do nothing when there are no admins or owners.
+// Use contentType: 'text/html' for cards
+// Use <br/> for new lines.
+// Use <a href="linkToConv"> Username </a> for links with text.
+// Turn the for loop into a map + join.
 
 const path = require('path');
 const envfile = `${process.cwd()}${path.sep}.env`;
@@ -44,26 +48,25 @@ if (!process.env.TOKEN) {
 // Logs any error produced to the console
 bot.on('error', log);
 
-bot.on('message.create.bot.command', async (info) => {
-    if (info.text === "/join") {
+bot.on('message.create.bot.command', async (message, conversation) => {
+    if (message.text === "/join") {
         try {
-            const conversationId = info.conversation
-            log(conversationId)
-            const conversation = await bot.conversations.get(conversationId)
-            const user = conversation.participants.find((participants) => participants.role === 'agent');
+            const user = conversation.participants.find(p => p.role === 'agent' || p.role === 'owner');
             const getUser = await bot.users.get(user.user)
-            log(getUser.email)
-            if (user.role === 'agent') {
-                await bot.send(conversationId, [{
+            const domain = (getUser.email.split('@'))[1] // Splits the email address in tween, returning the domain in an array.
+            const organization = await bot.organizations.get(user.organization)
+            const organizationDomain = organization.whitelist.find((whitelist) => whitelist === domain);
+            if (organizationDomain) {
+                const colleagues = await bot.users.list({ organization:user.organization, email:`~@${domain}` })
+                let string = "Colleagues of this contact  \n"
+                for (i = 0; i < colleagues.length; i++) {
+                    string = string + colleagues[i].displayName + " \n"
+                }
+                await conversation.say({
                     type: 'card',
-                    text: 'Colleagues of this contact.',
+                    text: string,
                     isBackchannel: true
-                },
-                {
-                    type: 'card',
-                    text: 'https://developers.chatshipper.com/docs/pg-introduction',
-                    isBackchannel: true
-                }])
+                })
             }
         } catch (e) {
             errorCatch(e)
@@ -74,3 +77,16 @@ bot.on('message.create.bot.command', async (info) => {
 
 // Start Express.js webhook server to start listening
 bot.start();
+
+/*
+                    await bot.send(conversationId, [{
+                        type: 'card',
+                        text: 'Colleagues of this contact.',
+                        isBackchannel: true
+                    },
+                        {
+                            type: 'card',
+                            text: 'https://developers.chatshipper.com/docs/pg-introduction',
+                            isBackchannel: true
+                        }])
+                        */
