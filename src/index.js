@@ -1,8 +1,3 @@
-// Make bot do nothing when there are no admins or owners.
-// Use contentType: 'text/html' for cards
-// Use <br/> for new lines.
-// Use <a href="linkToConv"> Username </a> for links with text.
-// Turn the for loop into a map + join.
 
 const path = require('path');
 const envfile = `${process.cwd()}${path.sep}.env`;
@@ -40,53 +35,38 @@ if (!process.env.TOKEN) {
     throw 'No token found, please define a token with export TOKEN=(Webhook token), or use an .env file.'
 }
 
-// Use any REST resource
-// bot.users.get(bot.auth.user).then((botUser) => {
-// log(`Hello ${botUser.role}`);
-//});
-
 // Logs any error produced to the console
 bot.on('error', log);
 
-bot.on('message.create.bot.command', async (message, conversation) => {
+bot.on('message.create.*.command', async (message, conversation) => {
+    log(message.text)
     if (message.text === "/join") {
         try {
-            const user = conversation.participants.find(p => p.role === 'agent' || p.role === 'owner');
-            const getUser = await bot.users.get(user.user)
-            const domain = (getUser.email.split('@'))[1] // Splits the email address in tween, returning the domain in an array.
-            const organization = await bot.organizations.get(user.organization)
-            const organizationDomain = organization.whitelist.find((whitelist) => whitelist === domain);
-            if (organizationDomain) {
-                const colleagues = await bot.users.list({ organization:user.organization, email:`~@${domain}` })
-                let string = "Colleagues of this contact  \n"
-                for (i = 0; i < colleagues.length; i++) {
-                    string = string + colleagues[i].displayName + " \n"
+            const user = conversation.participants.find(p => p.role === 'admin' || p.role === 'owner');
+            if (user) {
+                const getUser = await bot.users.get(user.user)
+                const domain = (getUser.email.split('@'))[1] // Splits the email address in tween, returning the domain in an array.
+                const organization = await bot.organizations.get(user.organization)
+                const organizationDomain = organization.whitelist.find((whitelist) => whitelist === domain);
+                if (organizationDomain) {
+                    const colleagues = await bot.users.list({ organization:user.organization, email:`~@${domain}` })
+                    let string = `<b><p style="font-size:15px">Colleagues of this contact. Domain is ${domain} </p></b> </br>`
+                    const map = colleagues.map(x => `<a href="https://youtube.com"><i>${x.displayName}</i></a>`)
+                    string = string + map.join(' </br>')
+                    log(string)
+                    await conversation.say({
+                        contentType: 'text/html',
+                        type: 'card',
+                        text: string,
+                        isBackchannel: true
+                    })
                 }
-                await conversation.say({
-                    type: 'card',
-                    text: string,
-                    isBackchannel: true
-                })
-            }
+            } else { log("No admins or owners in this chat.") }
         } catch (e) {
             errorCatch(e)
         }
     }
 });
 
-
 // Start Express.js webhook server to start listening
 bot.start();
-
-/*
-                    await bot.send(conversationId, [{
-                        type: 'card',
-                        text: 'Colleagues of this contact.',
-                        isBackchannel: true
-                    },
-                        {
-                            type: 'card',
-                            text: 'https://developers.chatshipper.com/docs/pg-introduction',
-                            isBackchannel: true
-                        }])
-                        */
