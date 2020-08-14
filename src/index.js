@@ -50,8 +50,17 @@ bot.on('message.create.*.command', async (message, conversation) => {
                 const organizationDomain = organization.whitelist.find((whitelist) => whitelist === domain);
                 if (organizationDomain) {
                     const colleagues = await bot.users.list({ organization:user.organization, email:`~@${domain}` })
+                        /*
+                    const names = colleagues.map(x => x.displayName)
+                    log(names)
+                    const urls = new Array()
+                    const colleagueChats = await bot.conversations.list({ participants:{Name:names} })
+                    log(colleagueChats)
+                    log(urls)
+                    */
                     let string = `<b><p style="font-size:15px">Colleagues of this contact. Domain is ${domain} </p></b> </br>`
-                    const map = colleagues.map(x => `<a href="https://youtube.com"><i>${x.displayName}</i></a>`)
+                    const urls = ["https://development.chatshipper.com/conversations/5f368c5da5f058001d9c9fd5","https://development.chatshipper.com/conversations/5f368c944d4bc0001db15640","https://development.chatshipper.com/conversations/5f368ca0a5f058001d9c9fdf","https://development.chatshipper.com/conversations/5f368ccbc2cc6c001e92aff0"]
+                    const map = colleagues.map((x, index)=> `<a href=${urls[index - 1]}><i>${x.displayName}</i></a>`)
                     string = string + map.join(' </br>')
                     log(string)
                     await conversation.say({
