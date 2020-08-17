@@ -49,18 +49,31 @@ bot.on('message.create.*.command', async (message, conversation) => {
                 const organization = await bot.organizations.get(user.organization)
                 const organizationDomain = organization.whitelist.find((whitelist) => whitelist === domain);
                 if (organizationDomain) {
-                    const colleagues = await bot.users.list({ organization:user.organization, email:`~@${domain}` })
-                        /*
+                    const colleagues = await bot.users.list({ organization:user.organization, role:'admin' , email:`~@${domain}` })
                     const names = colleagues.map(x => x.displayName)
                     log(names)
-                    const urls = new Array()
-                    const colleagueChats = await bot.conversations.list({ participants:{Name:names} })
-                    log(colleagueChats)
-                    log(urls)
-                    */
-                    let string = `<b><p style="font-size:15px">Colleagues of this contact. Domain is ${domain} </p></b> </br>`
-                    const urls = ["https://development.chatshipper.com/conversations/5f368c5da5f058001d9c9fd5","https://development.chatshipper.com/conversations/5f368c944d4bc0001db15640","https://development.chatshipper.com/conversations/5f368ca0a5f058001d9c9fdf","https://development.chatshipper.com/conversations/5f368ccbc2cc6c001e92aff0"]
-                    const map = colleagues.map((x, index)=> `<a href=${urls[index - 1]}><i>${x.displayName}</i></a>`)
+                    let objects = []
+                    let amountOfUndefined = 0
+                    for await (const element of names) {
+                        try {
+                            const conversationWithUrl = await bot.conversations.list({ participants:{name:element}, status:'active' })
+                            if (conversationWithUrl) {
+                                const object = {
+                                    username: element,
+                                    url: conversationWithUrl[0].url
+                                }
+                                objects.push(object)
+                            }
+                        } catch (e) {
+                            const object = {
+                                username: element,
+                                url: undefined
+                            }
+                        }
+                    }
+                    log(objects)
+                    let string = `<b><p style="font-size:15px">Admins of this contact with an active conversation. Domain is ${domain} </p></b> </br>`
+                    const map = objects.map((x, index)=> `<a href=${x.url}><i>${x.username}</i></a>`)
                     string = string + map.join(' </br>')
                     log(string)
                     await conversation.say({
