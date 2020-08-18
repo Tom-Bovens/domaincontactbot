@@ -1,4 +1,8 @@
 
+// Add meta to the card to check if the links are the same, and make the bot not post another card.
+// Make a more appropriate video.
+
+
 const path = require('path');
 const envfile = `${process.cwd()}${path.sep}.env`;
 require('dotenv').config({
@@ -40,50 +44,64 @@ bot.on('error', log);
 
 bot.on('message.create.*.command', async (message, conversation) => {
     log(message.text)
-    if (message.text === "/join") {
+    if (message.text === "/join" || message.text === "/assign") {
         try {
             const user = conversation.participants.find(p => p.role === 'admin' || p.role === 'owner');
             if (user) {
                 const getUser = await bot.users.get(user.user)
                 const domain = (getUser.email.split('@'))[1] // Splits the email address in tween, returning the domain in an array.
-                const organization = await bot.organizations.get(user.organization)
+                    const organization = await bot.organizations.get(user.organization)
                 const organizationDomain = organization.whitelist.find((whitelist) => whitelist === domain);
                 if (organizationDomain) {
-                    const colleagues = await bot.users.list({ organization:user.organization, role:'admin' , email:`~@${domain}` })
+                    const colleagues = await bot.users.list({ organization:user.organization, role:'admin' || 'owner' , email:`~@${domain}`, limit:20 })
                     const names = colleagues.map(x => x.displayName)
-                    log(names)
-                    let objects = []
-                    let amountOfUndefined = 0
+                    let withURL = []
+                    let withoutURL = []
                     for await (const element of names) {
                         try {
-                            const conversationWithUrl = await bot.conversations.list({ participants:{name:element}, status:'active' })
-                            if (conversationWithUrl) {
+                            const conversationWithUrl = await bot.conversations.list({ participants:{name:element}, status:'active', limit:20 })
+                            if (conversationWithUrl && conversationWithUrl[0].url != conversation.url) {
                                 const object = {
                                     username: element,
                                     url: conversationWithUrl[0].url
                                 }
-                                objects.push(object)
+                                withURL.push(object)
+                            } else {
+                                const object = {
+                                    username: element,
+                                    url: undefined
+                                }
+                                withoutURL.push(object)
                             }
                         } catch (e) {
                             const object = {
                                 username: element,
                                 url: undefined
                             }
+                            withoutURL.push(object)
                         }
                     }
-                    log(objects)
-                    let string = `<b><p style="font-size:15px">Admins of this contact with an active conversation. Domain is ${domain} </p></b> </br>`
-                    const map = objects.map((x, index)=> `<a href=${x.url}><i>${x.username}</i></a>`)
-                    string = string + map.join(' </br>')
-                    log(string)
-                    await conversation.say({
-                        contentType: 'text/html',
-                        type: 'card',
-                        text: string,
-                        isBackchannel: true
-                    })
+                    if (withURL.length > 0) {
+                        let string = `<b><p style="font-size:15px">List of admins domain ${domain}. Domain is ${domain} </p></b> </br>`
+                        const map1 = withURL.map((x, index) => `<a href=${x.url}><i>${x.username}</i></a>`)
+                        string = string + map1.join(' </br>')
+                        const map2 = withoutURL.map((x, index) => `<i>${x.username}</i>`)
+                        string = string + ' </br>'
+                        string = string + map2.join(' </br>')
+                        olderMessage = await bot.messages.list({limit:1, type:'card', organization:conversation.organization})
+                        log(olderMessage)
+                        if (olderMessage.text === string) {
+                        } else {
+                            await conversation.say({
+                                contentType: 'text/html',
+                                type: 'card',
+                                text: string,
+                                isBackchannel: true
+                            })
+                        }
+                    }
                 }
-            } else { log("No admins or owners in this chat.") }
+            }
         } catch (e) {
             errorCatch(e)
         }
