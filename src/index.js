@@ -89,12 +89,12 @@ bot.on('message.create.*.command', async (message, conversation) => {
                         string = string + ' </br>'
                         string = string + map2.join(' </br>')
                         olderMessage = await bot.messages.list({limit:1, type:'card', organization:conversation.organization})
-                        log(olderMessage)
                         if (olderMessage.text === string) {
                         } else {
                             await conversation.say({
                                 contentType: 'text/html',
                                 type: 'card',
+                                participants: [user.user],
                                 text: string,
                                 isBackchannel: true
                             })
