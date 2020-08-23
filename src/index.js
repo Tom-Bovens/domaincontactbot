@@ -97,7 +97,12 @@ bot.on('message.create.*.command', async (message, conversation) => {
                                 participants: [user.user],
                                 text: string,
                                 isBackchannel: true
-                            })
+                            },
+                            {
+                                tyoe: 'command',
+                                text: '/leave'
+                            }
+                            )
                         }
                     }
                 }
